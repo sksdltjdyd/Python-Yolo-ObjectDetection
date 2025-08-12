@@ -18,8 +18,8 @@ Object Detection Using Opencv, Mediapipe and YOLO. We are connecting code to Unr
 - PyYAML
 - requests
 - scipy
-- torch
-- torchvision
+- torch --> https://pytorch.org/get-started/locally/ make sure match version with your computer Cuda Version
+- torchvision --> https://pytorch.org/get-started/locally/ make sure match version with your computer Cuda Version
 - tqdm
 - filterpy
 - scikit-image
