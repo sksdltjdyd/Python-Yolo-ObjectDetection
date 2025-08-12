@@ -4,10 +4,10 @@ import cvzone
 import math
 import time
 
-cap = cv2.VideoCapture(0)  # For Webcam
-cap.set(3, 1280)
-cap.set(4, 720)
-# cap = cv2.VideoCapture("../Videos/motorbikes.mp4")  # For Video
+# cap = cv2.VideoCapture(0)  # For Webcam
+# cap.set(3, 1280)
+# cap.set(4, 720)
+cap = cv2.VideoCapture("C:/Users/User/Documents/Git/Python-Yolo-ObjectDetection/Videos/bikes.mp4")  # For Video
  
  
 model = YOLO('C:/Users/User/Documents/Git/Python-Yolo-ObjectDetection/Yolo-Weights/yolov8l.pt')
