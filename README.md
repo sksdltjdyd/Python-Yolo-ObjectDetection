@@ -11,7 +11,7 @@ Object Detection Using Opencv, Mediapipe and YOLO. We are connecting code to Unr
 - ultralytics
 - hydra-core
 - matplotlib
-- numpy>=1.18.5
+- numpy
 - opencv-python
 - opencv-contrib-python
 - Pillow
