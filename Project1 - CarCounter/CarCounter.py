@@ -28,10 +28,10 @@ success, img = cap.read()
 if not success:
     print("비디오를 읽을 수 없습니다.")
 else:
-    # 2. 마스크의 크기를 비디오 프레임의 크기와 동일하게 조절합니다.
+    # 마스크의 크기를 비디오 프레임의 크기와 동일하게 조절
     mask = cv2.resize(mask, (img.shape[1], img.shape[0]))
     
-    # 3. 비디오를 처음부터 다시 읽기 위해 프레임 위치를 0으로 리셋합니다.
+    # 비디오를 처음부터 다시 읽기 위해 프레임 위치를 0으로 리셋
     cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
 
 # Tracking
