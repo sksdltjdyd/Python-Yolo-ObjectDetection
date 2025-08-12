@@ -8,25 +8,25 @@ Object Detection Using Opencv, Mediapipe and YOLO. We are connecting code to Unr
 
 ## 2. Installation Lib
 - cvzone
-- ultralytics
+- ultralytics // Main Object Detection
 - hydra-core
 - matplotlib
 - numpy
-- opencv-python
-- opencv-contrib-python
+- opencv-python // For Connecting Camera 
+- opencv-contrib-python // For Connecting Camera
 - Pillow
 - PyYAML
 - requests
 - scipy
-- torch --> https://pytorch.org/get-started/locally/ make sure match version with your computer Cuda Version
-- torchvision --> https://pytorch.org/get-started/locally/ make sure match version with your computer Cuda Version
+- torch // https://pytorch.org/get-started/locally/ make sure match version with your computer Cuda Version
+- torchvision // https://pytorch.org/get-started/locally/ make sure match version with your computer Cuda Version
 - tqdm
 - filterpy
 - scikit-image
 - lap
-- pyrealsense2
-- python-osc
-- mediapipe
-- pygame
-- PyQt5
+- pyrealsense2 // Intel RealSense[Depth Camera] SDK
+- python-osc // For Connecting Unreal Engine 
+- mediapipe // For Detectecting Gesture
+- pygame // Simple Game Test
+- PyQt5 // Simple Game GUI
 
