@@ -20,14 +20,29 @@ classNames = ["person", "bicycle", "car", "motorbike", "aeroplane", "bus", "trai
               "microwave", "oven", "toaster", "sink", "refrigerator", "book", "clock", "vase", "scissors",
               "teddy bear", "hair drier", "toothbrush"
               ]
- 
+
+mask = cv2.imread("C:/Users/User/Documents/Git/Python-Yolo-ObjectDetection/Project1 - CarCounter/mask.png")
+
+success, img = cap.read()
+if not success:
+    print("비디오를 읽을 수 없습니다.")
+else:
+    # 2. 마스크의 크기를 비디오 프레임의 크기와 동일하게 조절합니다.
+    mask = cv2.resize(mask, (img.shape[1], img.shape[0]))
+    
+    # 3. 비디오를 처음부터 다시 읽기 위해 프레임 위치를 0으로 리셋합니다.
+    cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
+
 prev_frame_time = 0
 new_frame_time = 0
  
 while True:
     new_frame_time = time.time()
     success, img = cap.read()
-    results = model(img, stream=True)
+    if not success:
+        break
+    imgRegion = cv2.bitwise_and(img, mask)
+    results = model(imgRegion, stream=True)
     for r in results:
         boxes = r.boxes
         for box in boxes:
@@ -52,4 +67,5 @@ while True:
     print(fps)
  
     cv2.imshow("Image", img)
+    cv2.imshow("ImageRegion", imgRegion)
     cv2.waitKey(1)
