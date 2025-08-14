@@ -4,6 +4,7 @@ import pyrealsense2 as rs
 from ultralytics import YOLO
 import time
 
+### 리얼센스 카메라 사용 코드 ###
 class YOLOBallTracker:
     def __init__(self, model_path=None):
         # RealSense 초기화
