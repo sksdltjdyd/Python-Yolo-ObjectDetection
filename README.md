@@ -7,6 +7,7 @@ Object Detection Using Opencv, Mediapipe and YOLO. We are connecting code to Unr
 - We Use Python and developed in Virtual Environment
 
 ## 2. Installation Lib
+- Python Version : Python 3.10.11
 - Check the requirements.txt
 - pip install -r requirements.txt
 
