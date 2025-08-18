@@ -20,10 +20,8 @@ Object Detection Using Opencv, Mediapipe and YOLO. We are connecting code to Unr
 ## 4. Torch, Torchvision
 1. pip uninstall torch torchvision -> Uninstall torch and torchvision
 2. Go to cuDNN Website(above URL) Download cudnn .zip file
-3. 
-![alt text](image.png)
-Copy and paste
+3. Go to ../Program Files/NVIDIA GPU Computing Toolkit/CUDA/yourversion
+4. Copy and paste downloaded file to above same folder
 4. Go to Pytorch Website(above URL) and click get started
-5. 
-![alt text](image-1.png)
+5. ![alt text](image-1.png)
 Make sure match your cuda version and install
