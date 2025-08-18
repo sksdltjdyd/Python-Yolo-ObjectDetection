@@ -16,6 +16,7 @@ Object Detection Using Opencv, Mediapipe and YOLO. We are connecting code to Unr
 - cuDNN -> https://developer.nvidia.com/rdp/cudnn-archive
 - pytorch -> https://pytorch.org/
 - Yolo Weight and Video -> https://drive.google.com/drive/folders/1Yi7uw6qve42ixLSM4KoraJm3iqWI-l3p?usp=sharing
+- Intel RealSense SDK 2.0 -> https://github.com/IntelRealSense/librealsense/releases
 
 ## 4. Torch, Torchvision
 1. pip uninstall torch torchvision -> Uninstall torch and torchvision
@@ -23,5 +24,5 @@ Object Detection Using Opencv, Mediapipe and YOLO. We are connecting code to Unr
 3. Go to ../Program Files/NVIDIA GPU Computing Toolkit/CUDA/yourversion
 4. Copy and paste downloaded file to above same folder
 4. Go to Pytorch Website(above URL) and click get started
-5. ![alt text](image-1.png)
+5. ![alt text](pytorch.png)
 Make sure match your cuda version and install
