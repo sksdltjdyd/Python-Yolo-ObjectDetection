@@ -15,17 +15,15 @@ Object Detection Using Opencv, Mediapipe and YOLO. We are connecting code to Unr
 - labellmg -> https://github.com/HumanSignal/labelImg/releases/tag/v1.8.1
 - cuDNN -> https://developer.nvidia.com/rdp/cudnn-archive
 - pytorch -> https://pytorch.org/
+- Yolo Weight and Video -> https://drive.google.com/drive/folders/1Yi7uw6qve42ixLSM4KoraJm3iqWI-l3p?usp=sharing
 
 ## 4. Torch, Torchvision
 1. pip uninstall torch torchvision -> Uninstall torch and torchvision
 2. Go to cuDNN Website(above URL) Download cudnn .zip file
-
 3. 
 ![alt text](image.png)
 Copy and paste
-
 4. Go to Pytorch Website(above URL) and click get started
-
 5. 
 ![alt text](image-1.png)
 Make sure match your cuda version and install
