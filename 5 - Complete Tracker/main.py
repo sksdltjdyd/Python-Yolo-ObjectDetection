@@ -1,26 +1,38 @@
 import numpy as np
 import cv2
-import pyrealsense2 as rs # rs 임포트 추가
+import pyrealsense2 as rs
+import tkinter as tk
 
-# 분리된 모듈들을 import합니다.
 from state_manager import StateManager, AppMode, SetupStep
 from camera_manager import CameraManager
 from vision_processor import VisionProcessor
 from data_manager import DataManager
-from ui_manager import UIManager
+from visualizer import Visualizer # 이름 변경
 from interaction_engine import InteractionEngine
+from gui_manager import GUIManager # 신규 GUI 매니저 import
 
 class Application:
     """모든 모듈을 총괄하고 메인 루프를 실행"""
-    def __init__(self):
+    def __init__(self, root):
+        self.root = root
         self.state = StateManager()
         self.camera = CameraManager()
         self.vision = VisionProcessor(model_path='yolov8n.pt')
         self.data = DataManager()
-        self.ui = UIManager('Ultimate Tracker', self.data)
+        self.visualizer = Visualizer('Tracker') # 이름 변경
         self.engine = InteractionEngine(self.camera.depth_intrinsics)
+
+        # ✨ GUI에 전달할 콜백 함수들 정의
+        app_callbacks = {
+            'capture_background': self.capture_background_action,
+            'update_param': self.update_depth_param,
+            'start_running': self.start_running_mode,
+            'stop_running': self.stop_running_mode,
+            'reset_points': self.reset_mask_points
+        }
+        self.gui = GUIManager(self.root, app_callbacks)
         
-        self.ui.set_mouse_callback(self.mouse_callback)
+        self.visualizer.set_mouse_callback(self.mouse_callback)
         self.collision_points = []
         
     def mouse_callback(self, event, x, y, flags, param):
@@ -30,60 +42,75 @@ class Application:
             elif event == cv2.EVENT_RBUTTONDOWN and self.data.mask_points:
                 self.data.mask_points.pop()
 
+    def update_depth_param(self, param, value):
+        self.data.depth_params[param] = int(value)
+        # 카메라 필터에도 실시간 반영 (필요시)
+        if param == 'noise_reduction' and value > 0:
+            self.camera.spatial.set_option(rs.option.filter_magnitude, int(value))
+
+    def reset_mask_points(self):
+        self.data.mask_points.clear()
+        print("Mask points reset.")
+
+    def start_running_mode(self):
+        if self.data.is_calibrated():
+            self.state.app_mode = AppMode.RUNNING
+            self.gui.show_running_mode()
+            self.data.save_calibration() # 실행 시 자동 저장
+        else:
+            print("❌ Complete setup first! (Need at least 4 points and background capture)")
+    
+    def stop_running_mode(self):
+        self.state.app_mode = AppMode.SETUP
+        self.gui.show_setup_mode()
+
     def run_setup_mode(self):
         depth_frame, color_frame = self.camera.get_frames()
         if color_frame is None: return
 
         color_image = np.asanyarray(color_frame.get_data())
-        self.ui.draw_setup_ui(color_image, self.state.setup_step, 
-                               self.data.mask_points, self.data.background_depth is not None)
+        self.visualizer.draw_setup_ui(color_image, self.state.setup_step, 
+                                      self.data.mask_points, self.data.background_depth is not None)
 
-        key = cv2.waitKey(1) & 0xFF
-        if key == ord('q'): self.state.app_mode = None
-        elif key == ord('r'):
-            if self.data.is_calibrated():
-                self.state.app_mode = AppMode.RUNNING
-            else:
-                print("❌ Complete setup first! (Need 4 points and background capture)")
-        elif key == ord('b'):
-            self.capture_background_action() # Action 호출
-        elif key == ord('s'):
-            self.data.save_calibration()
-    
     def capture_background_action(self):
+        if len(self.data.mask_points) < 4:
+            print("❌ Need at least 4 points to define the area before capturing background.")
+            return
+        
         print("Capturing background...")
-        # ... 배경 캡처 로직 ...
-        # 3D 경계면 계산 로직 추가
-        if len(self.data.mask_points) >= 4:
-            points_3d = []
-            # 배경 캡처 시 사용했던 뎁스 프레임이 필요하므로, 이 함수 내에서 프레임 획득
-            # 간단하게 하기 위해, 현재 data에 저장된 background_depth를 사용
-            if self.data.background_depth is None:
-                print("Capturing stable background for plane definition...")
-                # 안정적인 배경 프레임 캡처 (실제 구현에서는 더 많은 프레임 평균 필요)
-                _, d_frame = self.camera.get_frames()
-                if d_frame: self.data.background_depth = np.asanyarray(d_frame.get_data())
-
-            if self.data.background_depth is not None:
-                for p2d in self.data.mask_points[:4]: # 4개의 점만 사용
-                    y, x = p2d[1], p2d[0]
-                    if 0 <= y < self.data.background_depth.shape[0] and 0 <= x < self.data.background_depth.shape[1]:
-                        depth = self.data.background_depth[y, x]
-                        if depth > 0:
-                            point_3d = rs.rs2_deproject_pixel_to_point(self.camera.depth_intrinsics, [x, y], depth)
-                            points_3d.append(point_3d)
-
-                if len(points_3d) == 4:
-                    self.data.wall_plane_points_3d = np.array(points_3d, dtype=np.float32)
-                    v1 = self.data.wall_plane_points_3d[1] - self.data.wall_plane_points_3d[0]
-                    v2 = self.data.wall_plane_points_3d[3] - self.data.wall_plane_points_3d[0]
-                    normal = np.cross(v1, v2)
-                    self.data.wall_plane_equation = (normal / np.linalg.norm(normal), self.data.wall_plane_points_3d[0])
-                    print("✅ 3D Wall Plane defined.")
-                else:
-                    print("❌ Could not define 3D Wall Plane. Check depth at corner points.")
+        # 안정적인 배경 캡처를 위해 여러 프레임 평균
+        stable_depth_frame = None
+        for _ in range(10): # 10 프레임 시도
+            d_frame, _ = self.camera.get_frames()
+            if d_frame: stable_depth_frame = d_frame
+        
+        if stable_depth_frame:
+            self.data.background_depth = np.asanyarray(stable_depth_frame.get_data())
+            self.calculate_3d_plane()
+            self.gui.update_status(True)
         else:
-            print("❌ Need at least 4 points to define a plane.")
+            print("❌ Failed to capture stable depth frame for background.")
+            self.gui.update_status(False)
+
+    def calculate_3d_plane(self):
+        points_3d = []
+        for p2d in self.data.mask_points[:4]:
+            y, x = p2d[1], p2d[0]
+            if 0 <= y < self.data.background_depth.shape[0] and 0 <= x < self.data.background_depth.shape[1]:
+                depth = self.data.background_depth[y, x]
+                if depth > 0:
+                    point_3d = rs.rs2_deproject_pixel_to_point(self.camera.depth_intrinsics, [x, y], depth)
+                    points_3d.append(point_3d)
+
+        if len(points_3d) == 4:
+            self.data.wall_plane_points_3d = np.array(points_3d, dtype=np.float32)
+            v1 = self.data.wall_plane_points_3d[1] - self.data.wall_plane_points_3d[0]
+            v2 = self.data.wall_plane_points_3d[3] - self.data.wall_plane_points_3d[0]
+            normal = np.cross(v1, v2)
+            self.data.wall_plane_equation = (normal / np.linalg.norm(normal), self.data.wall_plane_points_3d[0])
+            print("✅ 3D Wall Plane defined.")
+        else:
+            print("❌ Could not define 3D Wall Plane.")
 
     def run_tracking_mode(self):
         depth_frame, color_frame = self.camera.get_frames()
@@ -97,30 +124,32 @@ class Application:
         detected_balls = self.vision.detect_balls(color_image)
         self.engine.update(detected_balls, depth_image)
         
-        # 새로운 충돌 감지 로직 호출
         new_collisions = self.engine.detect_collisions(
-            self.data.wall_plane_equation,
-            self.data.mask_points
-        )
+            self.data.wall_plane_equation, self.data.mask_points)
         self.collision_points.extend(new_collisions)
 
-        self.ui.draw_tracking_ui(color_image, self.engine.tracked_balls, self.collision_points)
+        self.visualizer.draw_tracking_ui(color_image, self.engine.tracked_balls, self.collision_points)
 
-        key = cv2.waitKey(1) & 0xFF
-        if key == ord('q'): self.state.app_mode = None
-        elif key == ord('e'): self.state.app_mode = AppMode.SETUP
-
-    def run(self):
-        while self.state.app_mode is not None:
-            if self.state.app_mode == AppMode.SETUP:
-                self.run_setup_mode()
-            elif self.state.app_mode == AppMode.RUNNING:
-                self.run_tracking_mode()
+    def update(self):
+        """메인 업데이트 루프. Tkinter와 함께 실행됩니다."""
+        if self.state.app_mode == AppMode.SETUP:
+            self.run_setup_mode()
+        elif self.state.app_mode == AppMode.RUNNING:
+            self.run_tracking_mode()
         
+        # 15ms 마다 이 함수를 다시 호출
+        self.root.after(15, self.update)
+
+    def on_close(self):
+        """창을 닫을 때 리소스를 정리"""
+        print("Closing application...")
         self.camera.stop()
-        cv2.destroyAllWindows()
-        print("Program terminated.")
+        self.visualizer.destroy_windows()
+        self.root.destroy()
 
 if __name__ == "__main__":
-    app = Application()
-    app.run()
+    root = tk.Tk()
+    app = Application(root)
+    root.protocol("WM_DELETE_WINDOW", app.on_close) # 닫기 버튼 콜백 설정
+    app.update() # 메인 루프 시작
+    root.mainloop()
