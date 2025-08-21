@@ -22,7 +22,7 @@ class Application:
         self.visualizer = Visualizer('Tracker') # 이름 변경
         self.engine = InteractionEngine(self.camera.depth_intrinsics)
 
-        # ✨ GUI에 전달할 콜백 함수들 정의
+        # GUI에 전달할 콜백 함수들 정의
         app_callbacks = {
             'capture_background': self.capture_background_action,
             'update_param': self.update_depth_param,
