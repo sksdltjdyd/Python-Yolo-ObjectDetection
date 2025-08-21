@@ -30,7 +30,7 @@ class DataManager:
             'background_depth': self.background_depth,
             'wall_distance': self.wall_distance,
             'depth_params': self.depth_params,
-            # ✨ 저장할 데이터 추가
+            # 저장할 데이터 추가
             'wall_plane_points_3d': self.wall_plane_points_3d,
             'wall_plane_equation': self.wall_plane_equation
         }
