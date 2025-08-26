@@ -17,7 +17,7 @@ class Application:
         self.root = root
         self.state = StateManager()
         self.camera = CameraManager()
-        self.vision = VisionProcessor(model_path='yolov8n.pt')
+        self.vision = VisionProcessor(model_path='C:/Users/User/Documents/Git/Python-Yolo-ObjectDetection/Yolo-Weights/Ball.pt')
         self.data = DataManager()
         self.visualizer = Visualizer('Tracker') # 이름 변경
         self.engine = InteractionEngine(self.camera.depth_intrinsics)
