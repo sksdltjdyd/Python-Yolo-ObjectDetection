@@ -7,7 +7,6 @@ import pickle
 import numpy as np
 import pyrealsense2 as rs
 import time
-from pythonosc import udp_client # ✨ OSC 라이브러리 import
 
 # --- 1. 기본 설정 ---
 camWidth, camHeight = 640, 480
@@ -17,21 +16,32 @@ classNames = ['ball']
 calibrationFilePath = 'realsense_calibration_data.p' 
 scale = 3 
 
-# --- ✨ OSC 설정 ---
+# --- OSC 설정 ---
 OSC_IP = "127.0.0.1"
 OSC_PORT = 8000
 try:
+    from pythonosc import udp_client
     osc_client = udp_client.SimpleUDPClient(OSC_IP, OSC_PORT)
     print(f"✅ OSC client configured for {OSC_IP}:{OSC_PORT}")
+except ImportError:
+    print("⚠️ python-osc not found. Skipping OSC.")
+    osc_client = None
 except Exception as e:
     print(f"❌ Could not initialize OSC client: {e}")
     osc_client = None
 
-# --- 2. 캘리브레이션 파일 로드 ---
+# --- 2. 캘리브레이션 파일 로드 및 행렬 계산 ---
 try:
     with open(calibrationFilePath, 'rb') as fileObj:
         points = pickle.load(fileObj)
     print(f"✅ Calibration file '{calibrationFilePath}' loaded.")
+    
+    # ✨ 정방향 및 역방향 투시 변환 행렬을 미리 계산
+    pts1 = np.float32([points[0], points[1], points[2], points[3]])
+    pts2 = np.float32([[0, 0], [camWidth, 0], [0, camHeight], [camWidth, camHeight]])
+    matrix = cv2.getPerspectiveTransform(pts1, pts2)
+    inverse_matrix = cv2.getPerspectiveTransform(pts2, pts1) # 역변환 행렬
+
 except FileNotFoundError:
     print(f"❌ ERROR: Calibration file not found at '{calibrationFilePath}'")
     exit()
@@ -46,12 +56,10 @@ counter = 0
 # --- 4. RealSense 카메라 초기화 ---
 pipeline = rs.pipeline()
 config = rs.config()
-# ✨ 뎁스 스트림을 추가로 활성화합니다.
 config.enable_stream(rs.stream.depth, camWidth, camHeight, rs.format.z16, 60)
 config.enable_stream(rs.stream.color, camWidth, camHeight, rs.format.bgr8, 60)
 try:
     profile = pipeline.start(config)
-    # ✨ 정렬 객체 및 뎁스 파라미터 획득
     align = rs.align(rs.stream.color)
     depth_intrinsics = profile.get_stream(rs.stream.depth).as_video_stream_profile().get_intrinsics()
     print("✅ RealSense camera started with Depth stream.")
@@ -66,13 +74,6 @@ fps_frame_count = 0
 fps = 0
 
 # --- 6. 함수 정의 ---
-def warpImage(imgMain, circles, width, height):
-    pts1 = np.float32([circles[0], circles[1], circles[2], circles[3]])
-    pts2 = np.float32([[0, 0], [width, 0], [0, height], [width, height]])
-    matrix = cv2.getPerspectiveTransform(pts1, pts2)
-    imgWarped = cv2.warpPerspective(imgMain, matrix, (width, height))
-    return imgWarped
-
 def detectObject(imgMain):
     results = model(imgMain, stream=False, verbose=False, conf=confidence)
     objects = []
@@ -87,16 +88,14 @@ def detectObject(imgMain):
 def mousePoints(event, x, y, flags, param):
     global counter
     if event == cv2.EVENT_LBUTTONDOWN and counter < 4:
-        circles[counter] = (x, y)
-        counter += 1
+        circles[counter] = (x, y); counter += 1
         print("Clicked points:", circles[:counter])
 
-# ✨ 3D 좌표 변환 함수
 def pixel_to_3d_point(x, y, depth_frame, intrinsics):
     if depth_frame is None or intrinsics is None: return None
-    depth = depth_frame.get_distance(x, y)
-    if depth == 0: return None # 거리가 측정되지 않으면 None 반환
-    # 실제 3D 좌표 (미터 단위)
+    # ✨ get_distance는 픽셀 좌표를 정수로 요구함
+    depth = depth_frame.get_distance(int(x), int(y))
+    if depth == 0: return None
     point_3d = rs.rs2_deproject_pixel_to_point(intrinsics, [x, y], depth)
     return point_3d
 
@@ -104,13 +103,12 @@ def pixel_to_3d_point(x, y, depth_frame, intrinsics):
 is_calibrating = False 
 try:
     while True:
-        # ✨ RealSense에서 정렬된 프레임 읽기
         frames = pipeline.wait_for_frames()
         aligned_frames = align.process(frames)
         color_frame = aligned_frames.get_color_frame()
-        depth_frame = aligned_frames.get_depth_frame() # 뎁스 프레임 획득
-        if not color_frame or not depth_frame:
-            continue
+        depth_frame = aligned_frames.get_depth_frame()
+        if not color_frame or not depth_frame: continue
+            
         img = np.asanyarray(color_frame.get_data())
 
         if is_calibrating:
@@ -119,42 +117,47 @@ try:
                 cv2.circle(img, (circles[i][0], circles[i][1]), 5, (0, 255, 0), cv2.FILLED)
             if counter == 4:
                 points = circles.copy()
-                with open(calibrationFilePath, 'wb') as fileObj:
-                    pickle.dump(points, fileObj)
-                print("✅ New calibration points saved!")
+                with open(calibrationFilePath, 'wb') as fileObj: pickle.dump(points, fileObj)
+                # ✨ 행렬들을 다시 계산
+                pts1 = np.float32([points[0], points[1], points[2], points[3]])
+                pts2 = np.float32([[0, 0], [camWidth, 0], [0, camHeight], [camWidth, camHeight]])
+                matrix = cv2.getPerspectiveTransform(pts1, pts2)
+                inverse_matrix = cv2.getPerspectiveTransform(pts2, pts1)
+                print("✅ New calibration points saved and matrices recalculated!")
                 is_calibrating = False
                 counter = 0
         else:
             # 일반 추적 모드
-            imgProjector = warpImage(img, points, camWidth, camHeight)
-            # ✨ 투시 변환된 뎁스 프레임도 생성
-            depth_image = np.asanyarray(depth_frame.get_data())
-            depthProjector = warpImage(depth_image, points, camWidth, camHeight)
-            # 뎁스 프레임을 OpenCV에서 다룰 수 있도록 래핑
-            warped_depth_frame = rs.depth_frame(rs.frame(depthProjector))
-
+            imgProjector = cv2.warpPerspective(img, matrix, (camWidth, camHeight))
             imgWithObjects, objects = detectObject(imgProjector)
 
             if objects:
-                current_ball_center = objects[0]['center']
-                tracked_ball_last_pos = current_ball_center
+                warped_center = objects[0]['center']
+                tracked_ball_last_pos = warped_center
                 
-                # ✨ 현재 공의 3D 좌표 계산 및 OSC 전송
-                point3d = pixel_to_3d_point(current_ball_center[0], current_ball_center[1], warped_depth_frame, depth_intrinsics)
+                # ✨ 역변환으로 원본 좌표 찾기
+                warped_center_np = np.array([[warped_center]], dtype=np.float32)
+                original_center_np = cv2.perspectiveTransform(warped_center_np, inverse_matrix)
+                original_cx, original_cy = original_center_np[0][0]
+
+                # ✨ 원본 좌표와 원본 뎁스 프레임으로 3D 위치 계산 및 OSC 전송
+                point3d = pixel_to_3d_point(original_cx, original_cy, depth_frame, depth_intrinsics)
                 if point3d and osc_client:
-                    # 주소: /ball/position, 값: x, y, z 좌표 (미터 단위)
                     osc_client.send_message("/ball/position", [float(p) for p in point3d])
 
             else:
                 if tracked_ball_last_pos is not None:
-                    collision_x = int(tracked_ball_last_pos[0] * scale)
-                    collision_y = int(tracked_ball_last_pos[1] * scale)
-                    collision_points.append((collision_x, collision_y))
+                    collision_x_scaled = int(tracked_ball_last_pos[0] * scale)
+                    collision_y_scaled = int(tracked_ball_last_pos[1] * scale)
+                    collision_points.append((collision_x_scaled, collision_y_scaled))
 
-                    # ✨ 충돌 지점의 3D 좌표 계산 및 OSC 전송
-                    point3d = pixel_to_3d_point(tracked_ball_last_pos[0], tracked_ball_last_pos[1], warped_depth_frame, depth_intrinsics)
+                    # ✨ 충돌 지점도 역변환하여 3D 좌표 계산 및 OSC 전송
+                    last_pos_np = np.array([[tracked_ball_last_pos]], dtype=np.float32)
+                    original_last_pos_np = cv2.perspectiveTransform(last_pos_np, inverse_matrix)
+                    original_lx, original_ly = original_last_pos_np[0][0]
+                    
+                    point3d = pixel_to_3d_point(original_lx, original_ly, depth_frame, depth_intrinsics)
                     if point3d and osc_client:
-                        # 주소: /ball/collision, 값: x, y, z 좌표 (미터 단위)
                         osc_client.send_message("/ball/collision", [float(p) for p in point3d])
                         print(f"💥 Collision Sent via OSC at: {point3d}")
                     
@@ -166,7 +169,7 @@ try:
             cv2.imshow("Projector View (Warped)", imgWithObjects)
             cv2.imshow("Collision Wall", imgOutput)
 
-        # (FPS 계산 및 공통 UI 로직은 이전과 동일)
+        # (FPS 및 UI 로직은 이전과 동일)
         fps_frame_count += 1
         if time.time() - fps_start_time >= 1.0:
             fps = fps_frame_count; fps_frame_count = 0; fps_start_time = time.time()
