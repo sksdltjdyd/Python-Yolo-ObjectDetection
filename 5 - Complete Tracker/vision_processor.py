@@ -2,7 +2,7 @@ from ultralytics import YOLO
 
 class VisionProcessor:
     """YOLO 모델 로드 및 객체 탐지를 담당"""
-    def __init__(self, model_path='yolov8l.pt'):
+    def __init__(self, model_path='C:/Users/User/Documents/Git/Python-Yolo-ObjectDetection/Yolo-Weights/Ball.pt'):
         try:
             self.model = YOLO(model_path)
             print(f"✅ YOLO model loaded: {model_path}")
