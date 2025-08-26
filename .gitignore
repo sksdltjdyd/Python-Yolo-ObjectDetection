@@ -51430,3 +51430,33 @@ calibration_data.pkl
 yolov8n.pt
 Videos/RoboFile.mp4
 Videos/Robofile2.mp4
+venv/Lib/site-packages/mouse/_winmouse.py
+venv/Lib/site-packages/mouse/_nixmouse.py
+venv/Lib/site-packages/mouse/_nixcommon.py
+venv/Lib/site-packages/mouse/_mouse_tests.py
+venv/Lib/site-packages/mouse/_mouse_event.py
+venv/Lib/site-packages/mouse/_generic.py
+venv/Lib/site-packages/mouse/__pycache__/_winmouse.cpython-310.pyc
+venv/Lib/site-packages/mouse/__pycache__/_nixmouse.cpython-310.pyc
+venv/Lib/site-packages/mouse/__pycache__/_nixcommon.cpython-310.pyc
+venv/Lib/site-packages/mouse/__pycache__/_mouse_tests.cpython-310.pyc
+venv/Lib/site-packages/mouse/__pycache__/_mouse_event.cpython-310.pyc
+venv/Lib/site-packages/mouse/__pycache__/_generic.cpython-310.pyc
+venv/Lib/site-packages/mouse/__pycache__/__main__.cpython-310.pyc
+venv/Lib/site-packages/mouse/__pycache__/__init__.cpython-310.pyc
+venv/Lib/site-packages/mouse/__main__.py
+venv/Lib/site-packages/mouse/__init__.py
+venv/Lib/site-packages/mouse-0.7.1.dist-info/WHEEL
+venv/Lib/site-packages/mouse-0.7.1.dist-info/top_level.txt
+venv/Lib/site-packages/mouse-0.7.1.dist-info/REQUESTED
+venv/Lib/site-packages/mouse-0.7.1.dist-info/RECORD
+venv/Lib/site-packages/mouse-0.7.1.dist-info/METADATA
+venv/Lib/site-packages/mouse-0.7.1.dist-info/LICENSE.txt
+venv/Lib/site-packages/mouse-0.7.1.dist-info/INSTALLER
+4 - ComputerVision/Resources/background.jpg
+4 - ComputerVision/Resources/crackWhite.png
+4 - ComputerVision/Resources/fly.png
+4 - ComputerVision/Resources/background.jpg
+4 - ComputerVision/Resources/crackWhite.png
+4 - ComputerVision/Resources/fly.png
+realsense_calibration_data.p
