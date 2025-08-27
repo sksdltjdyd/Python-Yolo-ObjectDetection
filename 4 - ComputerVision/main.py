@@ -45,6 +45,26 @@ class ImprovedBallTracker:
         self.img_output = np.zeros((1080, 1920, 3), np.uint8)
         self.collision_points = []
         
+        def match_fov_to_unreal():
+            """RealSense와 언리얼 카메라 FOV 일치"""
+            
+            # RealSense D455 스펙
+            rs_fov_h = 87  # 수평 FOV
+            rs_fov_v = 58  # 수직 FOV
+            
+            # 언리얼로 전송
+            self.osc_client.send_message("/camera/fov", [rs_fov_h, rs_fov_v])
+
+            # 또는 프로젝터 화면 크기 기반 계산
+            screen_width = 300  # cm
+            screen_distance = 300  # cm
+            
+            # FOV = 2 * arctan(screen_width / (2 * distance))
+            calculated_fov = 2 * np.arctan(screen_width / (2 * screen_distance))
+            calculated_fov_degrees = np.degrees(calculated_fov)
+            
+            return calculated_fov_degrees
+        
     def load_calibration(self):
         try:
             with open(self.calibration_file, 'rb') as f:
@@ -169,6 +189,7 @@ class ImprovedBallTracker:
                 ])
         except Exception as e:
             print(f"OSC error: {e}")
+            
     
     def run(self):
         fps_timer = time.time()
@@ -249,6 +270,102 @@ class ImprovedBallTracker:
         
         self.pipeline.stop()
         cv2.destroyAllWindows()
+
+# Python (트래킹 측)
+class CoordinateMapper:
+    def __init__(self):
+        # RealSense 카메라 실제 설치 위치 (실제 공간)
+        self.camera_height = 170  # cm (사람 눈높이)
+        self.camera_distance_from_wall = 300  # cm
+        
+        # 언리얼 캐릭터 설정과 일치
+        self.unreal_player_height = 170  # 언리얼 단위
+        self.unreal_play_distance = 300
+        
+    def realsense_to_unreal(self, rs_x, rs_y, rs_z):
+        """RealSense 좌표를 언리얼 1인칭 시점 좌표로 변환"""
+        # RealSense: 카메라 중심이 원점
+        # Unreal: 플레이어 위치가 원점
+        
+        unreal_x = rs_z * 100  # 전방 (cm)
+        unreal_y = rs_x * 100  # 우측
+        unreal_z = -rs_y * 100 + self.camera_height  # 상하 (바닥 기준)
+        
+        return [unreal_x, unreal_y, unreal_z]
+
+class CalibrationSystem:
+    def __init__(self):
+        self.calibration_points = []
+        self.unreal_reference_points = []
+        
+    def calibrate_space(self):
+        """
+        실제 공간과 가상 공간 매칭
+        1. 실제 공간에 마커 설치 (4개 모서리)
+        2. 언리얼에서 같은 위치에 가상 마커 배치
+        3. 변환 행렬 계산
+        """
+        
+        # 실제 공간 기준점 (RealSense로 측정)
+        real_corners = [
+            [-150, 0, 200],  # 좌측 하단
+            [150, 0, 200],   # 우측 하단
+            [-150, 200, 200], # 좌측 상단
+            [150, 200, 200]   # 우측 상단
+        ]
+        
+        # 언리얼 공간 기준점
+        unreal_corners = [
+            [-150, -200, 0],
+            [150, -200, 0],
+            [-150, -200, 200],
+            [150, -200, 200]
+        ]
+        
+        # 변환 행렬 계산
+        self.transform_matrix = self.calculate_transform(real_corners, unreal_corners)
+
+class RealTimeSync:
+    def __init__(self):
+        self.offset = np.array([0, 0, 0])
+        self.scale = 1.0
+        self.rotation = np.eye(3)
+        
+    def sync_coordinates(self, rs_position):
+        """실시간 좌표 동기화"""
+        
+        # 1. 스케일 적용
+        scaled = rs_position * self.scale
+        
+        # 2. 회전 적용 (카메라 각도 보정)
+        rotated = np.dot(self.rotation, scaled)
+        
+        # 3. 오프셋 적용 (원점 이동)
+        final = rotated + self.offset
+        
+        # 4. 언리얼 좌표계로 변환
+        unreal_pos = [
+            final[2] * 100,  # Forward (X)
+            final[0] * 100,  # Right (Y)
+            -final[1] * 100  # Up (Z)
+        ]
+        
+        return unreal_pos
+    
+    def auto_calibrate(self, test_points):
+        """자동 캘리브레이션"""
+        # 테스트 포인트를 던져서 실제와 가상의 차이 계산
+        errors = []
+        
+        for real_pt, virtual_pt in test_points:
+            transformed = self.sync_coordinates(real_pt)
+            error = np.linalg.norm(transformed - virtual_pt)
+            errors.append(error)
+        
+        # 오프셋과 스케일 최적화
+        if np.mean(errors) > 10:  # 10cm 이상 오차
+            print("캘리브레이션 필요!")
+            self.optimize_transform(test_points)
 
 if __name__ == "__main__":
     tracker = ImprovedBallTracker()
