@@ -1,3 +1,5 @@
+# 영상 프레임별로 이미지 추출, 저장
+
 import cv2
 cap = cv2.VideoCapture('C:/Users/User/Documents/Git/Python-Yolo-ObjectDetection/Videos/RoboFile2.mp4')
 
