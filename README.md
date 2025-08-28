@@ -15,7 +15,7 @@ Object Detection Using Opencv, Mediapipe and YOLO. We are connecting code to Unr
 - labellmg -> https://github.com/HumanSignal/labelImg/releases/tag/v1.8.1
 - cuDNN -> https://developer.nvidia.com/rdp/cudnn-archive
 - pytorch -> https://pytorch.org/
-- Yolo Weight and Video -> https://drive.google.com/drive/folders/1Yi7uw6qve42ixLSM4KoraJm3iqWI-l3p?usp=sharing
+- Yolo Weight and Video -> https://drive.google.com/drive/folders/1eRmc3rN-6YIPhdAHLf83w-S-G7jM1nWf
 - Intel RealSense SDK 2.0 -> https://github.com/IntelRealSense/librealsense/releases
 
 ## 4. Torch, Torchvision
