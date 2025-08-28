@@ -51460,3 +51460,8 @@ venv/Lib/site-packages/mouse-0.7.1.dist-info/INSTALLER
 4 - ComputerVision/Resources/crackWhite.png
 4 - ComputerVision/Resources/fly.png
 realsense_calibration_data.p
+4 - ComputerVision/__pycache__/vision_processor.cpython-310.pyc
+4 - ComputerVision/__pycache__/tracker.cpython-310.pyc
+4 - ComputerVision/__pycache__/osc_manager.cpython-310.pyc
+4 - ComputerVision/__pycache__/camera_manager.cpython-310.pyc
+4 - ComputerVision/__pycache__/calibration_manager.cpython-310.pyc
