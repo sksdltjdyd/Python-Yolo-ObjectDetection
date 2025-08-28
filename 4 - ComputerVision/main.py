@@ -75,7 +75,7 @@ class App:
 
                 if collision_event and collision_event.get('3d'):
                     self.osc.send("/ball/collision", collision_event['3d'])
-                    self.osc.send(f"/ball/0/destroy", []) # ✨ 공 사라짐(소멸) 신호 복원
+                    self.osc.send(f"/ball/destroy", []) # ✨ 공 사라짐(소멸) 신호 복원
 
                     # 시각화용 충돌 포인트 추가
                     warped_pos = collision_event['2d_warped']
