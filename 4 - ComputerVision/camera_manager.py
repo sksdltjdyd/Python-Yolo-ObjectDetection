@@ -5,13 +5,13 @@ import pyrealsense2 as rs
 
 class CameraManager:
     def __init__(self, width=640, height=480, fps=60):
-        # ✨ 추가된 부분: width와 height를 클래스 변수로 저장
+        # 추가된 부분: width와 height를 클래스 변수로 저장
         self.width = width
         self.height = height
         
         self.pipeline = rs.pipeline()
         config = rs.config()
-        # ✨ 저장된 클래스 변수를 사용하도록 수정
+        # 저장된 클래스 변수를 사용하도록 수정
         config.enable_stream(rs.stream.depth, self.width, self.height, rs.format.z16, fps)
         config.enable_stream(rs.stream.color, self.width, self.height, rs.format.bgr8, fps)
         
@@ -19,9 +19,9 @@ class CameraManager:
             profile = self.pipeline.start(config)
             self.align = rs.align(rs.stream.color)
             self.depth_intrinsics = profile.get_stream(rs.stream.depth).as_video_stream_profile().get_intrinsics()
-            print("✅ RealSense camera initialized.")
+            print("RealSense camera initialized.")
         except Exception as e:
-            print(f"❌ RealSense init failed: {e}")
+            print(f"RealSense init failed: {e}")
             exit(1)
 
     def get_frames(self):
