@@ -7,10 +7,10 @@ class OSCManager:
     def __init__(self, ip="127.0.0.1", port=8000):
         try:
             self.client = udp_client.SimpleUDPClient(ip, port)
-            print(f"✅ OSC client configured for {ip}:{port}")
+            print(f"OSC client configured for {ip}:{port}")
         except Exception as e:
             self.client = None
-            print(f"❌ Could not initialize OSC client: {e}")
+            print(f"Could not initialize OSC client: {e}")
 
     def send(self, address, payload):
         if self.client:
