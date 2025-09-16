@@ -9,9 +9,9 @@ class VisionProcessor:
         self.confidence = confidence
         try:
             self.model = YOLO(model_path)
-            print(f"✅ YOLO model loaded: {model_path}")
+            print(f"YOLO model loaded: {model_path}")
         except Exception as e:
-            print(f"❌ Failed to load YOLO model: {e}")
+            print(f"Failed to load YOLO model: {e}")
             self.model = None
 
     def detect_ball(self, img):
@@ -28,7 +28,7 @@ class VisionProcessor:
                     
                     cv2.rectangle(img, (x1, y1), (x2, y2), (0, 255, 0), 2)
                     
-                    # --- ✨ 수정된 부분: 'confidence' 키 추가 ---
+                    # --- 수정된 부분: 'confidence' 키 추가 ---
                     detections.append({
                         'center': center, 
                         'bbox': (x1, y1, x2, y2),
