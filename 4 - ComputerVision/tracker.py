@@ -1,4 +1,6 @@
 # tracker.py
+# 볼 트랙킹 및 3D 위치 계산 담당
+
 import time
 import pyrealsense2 as rs
 import numpy as np
@@ -10,9 +12,13 @@ class BallTracker:
         self.last_known_pos = None
         self.last_collision_time = 0
         self.collision_cooldown = 0.5
-        self.tracking_history = []
 
-    def _realsense_to_unreal(self, point_rs, calibration):
+    def get_3d_position(self, x, y, depth_frame, calibration):
+        depth = depth_frame.get_distance(int(x), int(y))
+        if depth == 0: return None
+        
+        point_rs = rs.rs2_deproject_pixel_to_point(self.intrinsics, [x, y], depth)
+        
         # RealSense (미터) -> 기본 좌표계 (센티미터)
         point_cm = np.array([point_rs[0] * 100, point_rs[1] * 100, point_rs[2] * 100])
 
@@ -22,17 +28,10 @@ class BallTracker:
         point_cm = point_cm + calibration.offset
         
         # 언리얼 좌표계 축 매핑 및 플레이어 높이 보정
-        unreal_x = point_cm[2]  # Z -> X (forward)
-        unreal_y = point_cm[0]  # X -> Y (right)
-        unreal_z = -point_cm[1] + self.player_height  # -Y -> Z (up)
+        unreal_x = point_cm[2]
+        unreal_y = point_cm[0]
+        unreal_z = -point_cm[1] + self.player_height
         return [unreal_x, unreal_y, unreal_z]
-
-    def get_3d_position(self, x, y, depth_frame, calibration):
-        depth = depth_frame.get_distance(int(x), int(y))
-        if depth == 0: return None
-        
-        point_rs = rs.rs2_deproject_pixel_to_point(self.intrinsics, [x, y], depth)
-        return self._realsense_to_unreal(point_rs, calibration)
 
     def update(self, detected_balls, depth_frame_unwarped, calib_manager):
         current_time = time.time()
@@ -55,7 +54,7 @@ class BallTracker:
         if not ball_detected and ball_was_present:
             if current_time - self.last_collision_time > self.collision_cooldown:
                 collision_event = self.last_known_pos
-                print(f"💥 Collision Detected (Ball Disappeared) at 3D pos: {collision_event.get('3d')}")
+                print(f"Collision Detected (Ball Disappeared) at 3D pos: {collision_event.get('3d')}")
                 self.last_collision_time = current_time
             self.last_known_pos = None
 
