@@ -32,7 +32,7 @@ class App:
         if self.is_calibrating and event == cv2.EVENT_LBUTTONDOWN:
             if self.calibration.add_point(x, y):
                 self.is_calibrating = False
-                print("✅ Calibration complete! Tracking will now start.")
+                print("Calibration complete! Tracking will now start.")
 
     def handle_key_input(self, key):
         if key == ord('q'): return False
